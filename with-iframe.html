@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+  <head>
+    <!--
+    
+      No se notan cambios significativos con respecto
+      al without-iframe.
+
+    -->
+    <meta charset="utf-8">
+    <title>With IFrame</title>
+  </head>
+  <body>
+    <canvas></canvas>
+    <script type="module">
+      const canvas = document.querySelector('canvas')
+      const context = canvas.getContext('2d')
+      let frameId, x = 2, y = 2, w = 8, h = 8, vx = 1, vy = 1
+      function onFrame(time) {
+        if (x < 0 || x + w > canvas.width)
+          vx = -vx
+
+        if (y < 0 || y + h > canvas.height)
+          vy = -vy
+
+        x += vx
+        y += vy
+
+        context.clearRect(0, 0, canvas.width, canvas.height)
+        context.fillRect(x, y, w, h)
+
+        frameId = requestAnimationFrame(onFrame)
+      }
+      frameId = requestAnimationFrame(onFrame)
+    </script>
+    <iframe width="0" height="0" src="with-iframe-iframe.html"></iframe>
+    <script type="module">
+      (async () => {
+        let frameId, prevTime, delta
+        function onFrame(time) {
+          if (prevTime === undefined) prevTime = time
+          delta = time - prevTime
+          if (delta > 1000 / 30) {
+            console.warn('Frame delta', delta)
+          }
+          prevTime = time
+          frameId = requestAnimationFrame(onFrame)
+        }
+        frameId = requestAnimationFrame(onFrame)
+        window.addEventListener('pageshow', () => prevTime = undefined)
+        window.addEventListener('pagehide', () => prevTime = undefined)
+        window.addEventListener('blur', () => prevTime = undefined)
+      })()
+    </script>
+  </body>
+</html>

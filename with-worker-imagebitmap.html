@@ -1,0 +1,104 @@
+<!doctype html>
+<html>
+  <head>
+    <!--
+
+      No se notan cambios significativos con respecto
+      al with-iframe.
+
+    -->
+    <meta charset="utf-8">
+    <title>Without IFrame</title>
+  </head>
+  <body>
+    <canvas></canvas>
+    <script type="module">
+      const canvas = document.querySelector('canvas')
+      const context = canvas.getContext('2d')
+      let frameId, x = 2, y = 2, w = 8, h = 8, vx = 1, vy = 1
+      function onFrame(time) {
+        if (x < 0 || x + w > canvas.width)
+          vx = -vx
+
+        if (y < 0 || y + h > canvas.height)
+          vy = -vy
+
+        x += vx
+        y += vy
+
+        context.clearRect(0, 0, canvas.width, canvas.height)
+        context.fillRect(x, y, w, h)
+
+        frameId = requestAnimationFrame(onFrame)
+      }
+      frameId = requestAnimationFrame(onFrame)
+    </script>
+    <script type="module">
+      (async () => {
+        function loadImage(url, { width, height, decoding = 'async', crossOrigin = 'anonymous' } = {}) {
+          console.log('loadImage')
+          return new Promise((resolve, reject) => {
+            const image = new Image()
+            image.onload = () => {
+              console.log('loadImage::onload')
+              resolve(image)
+            }
+            image.onabort = () => {
+              console.error('loadImage::onabort')
+              reject(new Error('Abort'))
+            }
+            image.onerror = (error) => {
+              console.error('loadImage::onerror', error)
+              reject(error)
+            }
+            if (width)
+              image.width = width
+            if (height)
+              image.height = height
+            if (crossOrigin)
+              image.crossOrigin = crossOrigin 
+            if (decoding)
+              image.decoding = decoding
+            image.src = url
+          })
+        }
+
+        let frameId, prevTime = undefined, delta
+        function onFrame(time) {
+          if (prevTime === undefined) prevTime = time
+          delta = time - prevTime
+          if (delta > 1000 / 30) {
+            console.warn('Frame delta', delta)
+          }
+          prevTime = time
+          frameId = requestAnimationFrame(onFrame)
+        }
+        frameId = requestAnimationFrame(onFrame)
+        window.addEventListener('pageshow', () => prevTime = undefined)
+        window.addEventListener('pagehide', () => prevTime = undefined)
+        window.addEventListener('blur', () => prevTime = undefined)
+
+        const worker = new Worker('worker-imagebitmap.js')
+
+        const svgImage = await loadImage('assets/firefox.svg', {
+          width: 4096,
+          height: 4096 
+        })
+        
+        setInterval(async () => {
+          const imageBitmap = await createImageBitmap(svgImage, { resizeWidth: 4096, resizeHeight: 4096 })
+          worker.postMessage(imageBitmap, [imageBitmap])
+
+          /*
+          console.log('toBlob')
+          canvas.toBlob((blob) => {
+            console.log('toBlob::complete', blob)
+            const url = URL.createObjectURL(blob)
+            console.log('toBlob::url', url) 
+          })
+          */
+        }, 5000)
+      })()
+    </script>
+  </body>
+</html>
