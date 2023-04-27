@@ -1,5 +1,7 @@
 # Rendering SVG images without laggy performance
 
+Last demo is working as expected and 0 lag.
+
 ## Without Iframe :thumbsdown:
 
 [Demo](https://azazeln28.com/penpot/iframe-thumbnail-renderer/without-iframe.html)
