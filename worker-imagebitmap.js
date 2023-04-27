@@ -6,4 +6,5 @@ self.addEventListener('message', async (e) => {
   context.transferFromImageBitmap(e.data)
   const blob = await canvas.convertToBlob()
   console.log(blob)
+  e.data.close()
 })
