@@ -83,6 +83,23 @@
           })
         }
 
+        async function loadImageFirefox(url, { width, height, decoding = 'async', crossOrigin = 'anonymous' } = {}) {
+          console.log('loadImage')
+          const response = await fetch(url)
+          const xml = await response.text()
+          const parser = new DOMParser()
+          const svgDocument = parser.parseFromString(xml, 'image/svg+xml')
+          if (width)
+            svgDocument.documentElement.setAttribute('width', width)
+          if (height)
+            svgDocument.documentElement.setAttribute('height', height)
+          console.log(svgDocument.documentElement.attributes)
+          return loadImage(
+            `data:image/svg+xml;base64,${window.btoa(svgDocument.documentElement.outerHTML)}`,
+            { width, height, decoding, crossOrigin }
+          )
+        }
+
         let frameId, prevTime = undefined, delta
         function onFrame(time) {
           if (prevTime === undefined) prevTime = time
@@ -98,11 +115,26 @@
         window.addEventListener('pagehide', () => prevTime = undefined)
         window.addEventListener('blur', () => prevTime = undefined)
 
-        const svgImage = await loadImage('assets/firefox.svg', {
-          width: 4096,
-          height: 4096 
-        })
-        
+        function isFirefox() {
+          return /Firefox\/[0-9]+/.test(navigator.userAgent) && /Gecko\/[0-9]+/.test(navigator.userAgent) 
+        }
+
+        // In firefox the image is not rendered (that's why this works so
+        // fast in it :')
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=700533
+        let svgImage
+        if (isFirefox()) {
+          svgImage = await loadImageFirefox('assets/firefox.svg', {
+            width: 4096,
+            height: 4096 
+          })
+        } else {
+          svgImage = await loadImage('assets/firefox.svg', {
+            width: 4096,
+            height: 4096 
+          })
+        }
+          
         const canvas = document.createElement('canvas')
         canvas.width = svgImage.width
         canvas.height = svgImage.height
@@ -110,13 +142,13 @@
         setInterval(() => {
           const context = canvas.getContext('2d')
           context.clearRect(0, 0, canvas.width, canvas.height)
-          context.drawImage(svgImage, 0, 0)
-          console.log('toBlob')
+          context.drawImage(svgImage, 0, 0, canvas.width, canvas.height)
+          console.log('toBlob', svgImage.width, svgImage.height, canvas.width, canvas.height)
           canvas.toBlob((blob) => {
             console.log('toBlob::complete', blob)
             const url = URL.createObjectURL(blob)
             console.log('toBlob::url', url) 
-          })
+          }, 'image/png', 1)
         }, 2000)
       })()
     </script>
