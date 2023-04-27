@@ -27,11 +27,31 @@
         y += vy
 
         context.clearRect(0, 0, canvas.width, canvas.height)
+        context.fillStyle = '#fff'
+        context.fillRect(0, 0, canvas.width, canvas.height)
+        context.fillStyle = '#000'
         context.fillRect(x, y, w, h)
 
         frameId = requestAnimationFrame(onFrame)
       }
       frameId = requestAnimationFrame(onFrame)
+        
+      ;(async () => {
+        const stream = await canvas.captureStream()
+        const recorder = new MediaRecorder(stream)
+        const chunks = []
+        recorder.ondataavailable = (e) => chunks.push(e.data)
+        recorder.onstop = (e) => {
+          const blob = new Blob(chunks, { type: recorder.mimeType })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = 'with-worker-imagebitmap.webm'
+          a.click()
+        }
+        recorder.onstart = (e) => setTimeout(() => recorder.stop(), 10000)
+        recorder.start()
+      })()
     </script>
     <script type="module">
       (async () => {
